@@ -1,4 +1,0 @@
-import type { Attendance } from '../attendance/demoRecords';
-import { labelForDateKey, trustedNow } from '../../lib/serverTime';
-
-export function AttendanceTable({rows}:{rows:Attendance[]}){const now=trustedNow();return <div className="table-card"><div className="table-head"><span>FECHA</span><span>CENTRO DE TRABAJO</span><span>ENTRADA</span><span>SALIDA</span><span>EVIDENCIA</span><span>ESTADO</span></div>{rows.map(r=><div className="table-row" key={r.id}><strong>{r.date?labelForDateKey(r.date,now):r.day}</strong><span>{r.site}</span><span>{r.entry}</span><span>{r.exit}</span><span className="photo-tag">{r.photoCaptured?'✓ Foto':'—'}</span><span><i className={'state-dot '+(r.state==='Completa'?'done':'pending')}/>{r.state}</span></div>)}{!rows.length&&<div className="empty">Aún no hay registros.</div>}</div>}
