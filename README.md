@@ -9,15 +9,17 @@ cd A:\checadorTest
 npm run start
 ```
 
-Abre la URL local que indique Vite (normalmente `http://localhost:5173`). También puedes ejecutar `npm run dev`.
+Abre la URL que indique Vite (normalmente `http://localhost:5173`). Para producción usa `npm run build`.
 
-## Acceso para pruebas
+## Acceso y pruebas
 
-En la pantalla de bienvenida pulsa **Entrar sin cuenta**. El modo de demostración permite cambiar entre Jornada, Historial y Perfil, registrar entradas y salidas ficticias y conservarlas en el `localStorage` de ese navegador. La interfaz muestra el indicador **Modo de prueba**; estos datos no se envían a Supabase.
+En la bienvenida, pulsa **Entrar sin cuenta**. El modo de demostración permite recorrer Jornada, Historial y Perfil, y registrar una entrada y salida ficticias. Antes de cada movimiento solicita una foto desde la cámara web. La imagen solo vive en memoria durante la captura; no se sube ni conserva como archivo. El historial demo guarda únicamente la marca de que se capturó la foto y se queda en el `localStorage` del navegador. La app muestra el indicador **Modo de prueba**.
+
+La cámara requiere permiso del navegador y un contexto seguro: `localhost` o HTTPS. La hora actual se muestra en vivo en la tarjeta de jornada; al confirmar la foto se fija la hora del movimiento.
 
 ## Cuenta real
 
-Las variables están en `.env.local` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). Usa `.env.example` como referencia. El login real y las consultas de sitio e historial usan Supabase. La escritura real de asistencia está bloqueada hasta integrar en web el proveedor facial que genera el descriptor de 128 valores esperado por las funciones SQL; el modo de prueba no altera esa validación.
+Las variables están en `.env.local` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`); consulta `.env.example`. El login y las consultas de sitio e historial usan Supabase. La escritura real de asistencia permanece bloqueada hasta integrar el proveedor facial compatible con el descriptor que exigen las funciones SQL. No se envían fotos ni registros parciales al backend.
 
 ## Comprobaciones
 
