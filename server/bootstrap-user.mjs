@@ -1,0 +1,15 @@
+import 'dotenv/config';
+import bcrypt from 'bcryptjs';
+import {getPool,sql} from './db.mjs';
+const email=process.env.BOOTSTRAP_EMAIL?.trim().toLowerCase();
+const password=process.env.BOOTSTRAP_PASSWORD;
+const name=process.env.BOOTSTRAP_NAME||'Administrador';
+const matricula=process.env.BOOTSTRAP_MATRICULA||'ADMIN-001';
+if(!email||!password||password.length<12)throw new Error('Define BOOTSTRAP_EMAIL y una BOOTSTRAP_PASSWORD de al menos 12 caracteres en .env; no la compartas en el chat.');
+const pool=await getPool();
+const org=await pool.request().input('name',sql.NVarChar(160),process.env.BOOTSTRAP_ORGANIZATION||'Organización principal').query(`IF NOT EXISTS(SELECT 1 FROM dbo.organizaciones WHERE slug='organizacion-principal') INSERT dbo.organizaciones(nombre,slug) VALUES(@name,'organizacion-principal'); SELECT id FROM dbo.organizaciones WHERE slug='organizacion-principal'`);
+const orgId=org.recordset[0].id;
+const site=await pool.request().input('org',sql.UniqueIdentifier,orgId).input('name',sql.NVarChar(160),process.env.BOOTSTRAP_SITE||'Centro principal').query(`IF NOT EXISTS(SELECT 1 FROM dbo.sitios WHERE organizacion_id=@org) INSERT dbo.sitios(organizacion_id,nombre) VALUES(@org,@name); SELECT TOP(1) id FROM dbo.sitios WHERE organizacion_id=@org AND activo=1 ORDER BY nombre`);
+const siteId=site.recordset[0].id;const hash=await bcrypt.hash(password,12);
+await pool.request().input('org',sql.UniqueIdentifier,orgId).input('site',sql.UniqueIdentifier,siteId).input('name',sql.NVarChar(160),name).input('matricula',sql.NVarChar(80),matricula).input('email',sql.NVarChar(320),email).input('hash',sql.NVarChar(100),hash).query(`IF EXISTS(SELECT 1 FROM dbo.usuarios_app WHERE email=@email) THROW 51010,'Ese correo ya existe; no se modificó su contraseña.',1; INSERT dbo.usuarios_app(organizacion_id,sitio_id,nombre,matricula,email,password_hash,rol) VALUES(@org,@site,@name,@matricula,@email,@hash,'admin')`);
+console.log(`Administrador inicial creado: ${email}`);await pool.close();

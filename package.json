@@ -3,7 +3,39 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "scripts": {"start":"vite --host 0.0.0.0","dev":"vite --host 0.0.0.0","build":"tsc -b && vite build","preview":"vite preview --host 0.0.0.0","typecheck":"tsc --noEmit"},
-  "dependencies": {"@supabase/supabase-js":"^2.117.3","react":"^19.2.3","react-dom":"^19.2.3"},
-  "devDependencies": {"@types/react":"^19.2.2","@types/react-dom":"^19.2.2","typescript":"^6.0.3","vite":"latest"}
+  "scripts": {
+    "start": "concurrently -k \"npm:api\" \"npm:web\"",
+    "api": "node server/index.mjs",
+    "web": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "typecheck": "tsc --noEmit",
+    "db:bootstrap-user": "node server/bootstrap-user.mjs",
+    "db:provision": "node server/provision-database.mjs"
+  },
+  "dependencies": {
+    "bcryptjs": "latest",
+    "cookie-parser": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "^4.21.2",
+    "express-rate-limit": "latest",
+    "helmet": "latest",
+    "jsonwebtoken": "latest",
+    "mssql": "latest",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "latest",
+    "@types/express": "latest",
+    "@types/jsonwebtoken": "latest",
+    "@types/node": "latest",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "concurrently": "latest",
+    "typescript": "^6.0.3",
+    "vite": "latest",
+    "@vitejs/plugin-react": "latest"
+  }
 }
