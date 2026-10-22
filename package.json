@@ -10,7 +10,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc --noEmit",
-    "db:bootstrap-user": "node server/bootstrap-user.mjs"
+    "db:bootstrap-user": "node server/bootstrap-user.mjs",
+    "db:provision": "node server/provision-database.mjs"
   },
   "dependencies": {
     "bcryptjs": "latest",
