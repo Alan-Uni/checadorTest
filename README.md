@@ -1,25 +1,37 @@
 # Checador Web
 
-Aplicación web construida con React, TypeScript y Vite. No usa Expo ni React Native. La interfaz se organiza en `src/features` (acceso, asistencia e historial), `src/components` y `src/lib`.
+Aplicación web con React, TypeScript y Vite. La interfaz está en `src/`, agrupada por función. El servidor Express (`server/`) gestiona sesiones y consultas a Azure SQL; las credenciales nunca se envían al navegador.
 
-## Iniciar en desarrollo
+## Requisitos y ejecución
+
+Instala Node.js LTS y copia `.env.example` como `.env` en esta carpeta. Completa en `.env` `AZURE_SQL_CONNECTION_STRING` con la contraseña real (mantén toda la cadena entre comillas dobles si tiene caracteres especiales), y crea un `JWT_SECRET` largo y aleatorio. No compartas estos valores ni los subas al repositorio. Luego instala e inicia:
 
 ```powershell
 cd A:\checadorTest
+npm install
 npm run start
 ```
 
-Abre la URL local que indique Vite (normalmente `http://localhost:5173`). También puedes ejecutar `npm run dev`.
+Vite sirve la web en `http://localhost:5173` y el backend en `http://localhost:4000`. La cámara requiere localhost o HTTPS y permiso concedido en el navegador.
 
-## Acceso para pruebas
+## Preparar Azure SQL
 
-En la pantalla de bienvenida pulsa **Entrar sin cuenta**. El modo de demostración permite cambiar entre Jornada, Historial y Perfil, registrar entradas y salidas ficticias y conservarlas en el `localStorage` de ese navegador. La interfaz muestra el indicador **Modo de prueba**; estos datos no se envían a Supabase.
+La cadena que compartiste apunta a **Azure SQL (SQL Server)**. Si el catálogo `checador` aún no existe, ejecuta `database/create-database.sql` conectado al catálogo `master`. Después selecciona la base `checador` y ejecuta `database/schema.sql`. Los scripts pueden ejecutarse de nuevo sin recrear las tablas existentes.
 
-## Cuenta real
+Para crear el primer usuario administrador, coloca temporalmente `BOOTSTRAP_EMAIL`, `BOOTSTRAP_PASSWORD` (12 caracteres como mínimo), y opcionalmente nombre/matrícula/centro en `.env`, y ejecuta `npm run db:bootstrap-user`. La contraseña se guarda como hash. El script no cambia una cuenta existente.
 
-Las variables están en `.env.local` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). Usa `.env.example` como referencia. El login real y las consultas de sitio e historial usan Supabase. La escritura real de asistencia está bloqueada hasta integrar en web el proveedor facial que genera el descriptor de 128 valores esperado por las funciones SQL; el modo de prueba no altera esa validación.
+En Azure Portal, agrega la IP de salida del equipo/servidor que ejecutará la API a las reglas de firewall del servidor SQL. Para producción, despliega la API y el frontend bajo el mismo origen HTTPS; establece `NODE_ENV=production` y un `JWT_SECRET` seguro.
 
-## Comprobaciones
+## Acceso de prueba
 
-- `npm run typecheck`
-- `npm run build`
+Pulsa **Entrar sin cuenta**. El modo demo conserva registros ficticios en el almacenamiento local del navegador y no los envía a Azure SQL. En una sesión real, tanto entrada como salida requieren foto; la imagen se guarda en `varbinary(max)` como evidencia. Este flujo **no realiza reconocimiento facial** ni valida identidad biométrica.
+
+## Comprobación local
+
+```powershell
+npm run typecheck
+npm run build
+```
+
+Con `.env` configurado, visita `http://localhost:4000/api/health` para verificar la conexión a Azure SQL.
+
