@@ -11,7 +11,8 @@
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc --noEmit",
     "db:bootstrap-user": "node server/bootstrap-user.mjs",
-    "db:provision": "node server/provision-database.mjs"
+    "db:provision": "node server/provision-database.mjs",
+    "db:create-test-admin": "node server/create-test-admin.mjs"
   },
   "dependencies": {
     "bcryptjs": "latest",
