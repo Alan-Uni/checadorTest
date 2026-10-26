@@ -39,5 +39,10 @@
     "concurrently": "latest",
     "typescript": "^6.0.3",
     "vite": "latest"
-  }
+  },
+  "overrides": {
+  "@azure/msal-node": "^7.1.0"
 }
+}
+
+
