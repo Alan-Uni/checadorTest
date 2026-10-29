@@ -5,7 +5,7 @@ export interface ServerTimeResponse {
 }
 
 export const DEFAULT_SYNC_INTERVAL_MS = 5 * 60 * 1000;
-export const DEFAULT_DRIFT_THRESHOLD_MS = 30 * 1000;
+const RETRY_SYNC_INTERVAL_MS = 5 * 1000;
 
 function formatClock(baseTimeMs: number): string {
   return new Intl.DateTimeFormat('es-MX', {
@@ -18,54 +18,29 @@ function formatClock(baseTimeMs: number): string {
 
 export function useServerTime(): { clock: string } {
   const [clock, setClock] = useState(() => formatClock(Date.now()));
-  const baseTimeMsRef = useRef<number | null>(null);
-  const lastSyncDeviceMsRef = useRef<number | null>(null);
-  const lastServerMsRef = useRef<number | null>(null);
+  const baseTimeMsRef = useRef(Date.now());
+  const baseTimeMonotonicMsRef = useRef(performance.now());
   const syncInFlightRef = useRef(false);
 
-  const syncFromServer = async () => {
-    if (syncInFlightRef.current) return;
+  const syncFromServer = async (): Promise<boolean> => {
+    if (syncInFlightRef.current) return false;
     syncInFlightRef.current = true;
     try {
       const response = await fetch('/api/time');
-      if (!response.ok) return;
+      if (!response.ok) return false;
       const data = (await response.json()) as ServerTimeResponse;
       const serverMs = Date.parse(data.serverTime);
       if (!Number.isNaN(serverMs)) {
-        const now = Date.now();
-        const prevServerMs = lastServerMsRef.current;
-        const prevDeviceMs = lastSyncDeviceMsRef.current;
-        lastServerMsRef.current = serverMs;
-        lastSyncDeviceMsRef.current = now;
         baseTimeMsRef.current = serverMs;
+        baseTimeMonotonicMsRef.current = performance.now();
         setClock(formatClock(serverMs));
 
-        // Re-sincronización extra solo si el reloj del cliente se desfató
-        // más de 30 s con respecto al servidor durante el intervalo anterior.
-        if (
-          prevServerMs !== null &&
-          prevDeviceMs !== null &&
-          Math.abs((now - prevDeviceMs) - (serverMs - prevServerMs)) >= DEFAULT_DRIFT_THRESHOLD_MS
-        ) {
-          try {
-            const extra = await fetch('/api/time');
-            if (extra.ok) {
-              const extraData = (await extra.json()) as ServerTimeResponse;
-              const extraMs = Date.parse(extraData.serverTime);
-              if (!Number.isNaN(extraMs)) {
-                lastServerMsRef.current = extraMs;
-                lastSyncDeviceMsRef.current = Date.now();
-                baseTimeMsRef.current = extraMs;
-                setClock(formatClock(extraMs));
-              }
-            }
-          } catch {
-            // Falla silenciosamente; el reloj conserva el último valor.
-          }
-        }
+        return true;
       }
+      return false;
     } catch {
-      // El reloj continúa con el último valor; se re-sincroniza periódicamente.
+      // Mantiene el avance local hasta que el servidor vuelva a estar disponible.
+      return false;
     } finally {
       syncInFlightRef.current = false;
     }
@@ -75,21 +50,28 @@ export function useServerTime(): { clock: string } {
     let periodicSyncTimer: number | null = null;
     let tickTimer: number | null = null;
 
-    const schedulePeriodicSync = () => {
-      periodicSyncTimer = window.setTimeout(() => {
-        syncFromServer();
-        schedulePeriodicSync();
-      }, DEFAULT_SYNC_INTERVAL_MS);
+    let disposed = false;
+    const scheduleSync = (delayMs: number) => {
+      periodicSyncTimer = window.setTimeout(async () => {
+        const synced = await syncFromServer();
+        if (!disposed) {
+          scheduleSync(synced ? DEFAULT_SYNC_INTERVAL_MS : RETRY_SYNC_INTERVAL_MS);
+        }
+      }, delayMs);
     };
-    schedulePeriodicSync();
+    void syncFromServer().then((synced) => {
+      if (!disposed) {
+        scheduleSync(synced ? DEFAULT_SYNC_INTERVAL_MS : RETRY_SYNC_INTERVAL_MS);
+      }
+    });
 
     tickTimer = window.setInterval(() => {
-      const currentBase = baseTimeMsRef.current;
-      if (currentBase === null) return;
-      setClock(formatClock(currentBase));
+      const elapsedMs = performance.now() - baseTimeMonotonicMsRef.current;
+      setClock(formatClock(baseTimeMsRef.current + elapsedMs));
     }, 1000);
 
     return () => {
+      disposed = true;
       if (periodicSyncTimer !== null) {
         window.clearTimeout(periodicSyncTimer);
         periodicSyncTimer = null;
