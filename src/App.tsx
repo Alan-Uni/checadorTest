@@ -1,3 +1,4 @@
+import { useServerTime } from './lib/useServerTime';
 import { useEffect, useState } from 'react';
 import { api, type AppUser, type ApiAttendance } from './lib/api';
 import { LoginPage } from './features/auth/LoginPage';
@@ -29,9 +30,8 @@ function App() {
   const [site, setSite] = useState('Centro de trabajo');
   const [captureKind, setCaptureKind] = useState<CaptureKind | null>(null);
   const [busy, setBusy] = useState(false);
-  const [clock, setClock] = useState(liveTime);
+  const { clock } = useServerTime();
 
-  useEffect(() => { const timer = window.setInterval(() => setClock(liveTime()), 1000); return () => window.clearInterval(timer); }, []);
   useEffect(() => {
     let alive = true;
     api.me().then(({ user: currentUser }) => { if (alive) setUser(currentUser); }).catch(() => { if (alive) setUser(null); });
@@ -95,7 +95,7 @@ function App() {
           {view === 'home' && <>
             <div className="page-heading"><div><p className="eyebrow">{today().toUpperCase()}</p><h1>Hola, {name.split(' ')[0]}</h1><p className="muted">Aquí tienes el resumen de tu jornada.</p></div><div className="date-card"><span>HOY</span><strong>{new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}</strong></div></div>
             <section className="hero-card"><div className="hero-message"><span className="pill-light">JORNADA DE HOY</span><h2>{todayRow?.exit && todayRow.exit !== '—' ? 'Jornada completada' : todayRow?.entry && todayRow.entry !== '—' ? 'Tu jornada está en curso' : '¿Listo para comenzar?'}</h2><p>{todayRow?.entry && todayRow.entry !== '—' ? `Entrada registrada a las ${todayRow.entry}.` : 'Toma una foto para confirmar cada movimiento.'}</p></div>
-              <div className="hero-live-clock"><span>HORA ACTUAL</span><strong>{clock}</strong><small>La hora se fija al confirmar la foto</small></div>
+              <div className="hero-live-clock"><span>HORA ACTUAL</span><strong>{clock}</strong><small>La hora proviene del servidor</small></div>
               <div className="hero-actions"><button className="hero-button" onClick={() => setCaptureKind('entry')} disabled={busy || (!!todayRow?.entry && todayRow.entry !== '—')}>↓ &nbsp;Registrar entrada</button><button className="hero-button outline" onClick={() => setCaptureKind('exit')} disabled={busy || !todayRow?.entry || todayRow.exit !== '—'}>↑ &nbsp;Registrar salida</button></div><div className="hero-decoration">◷</div>
             </section>
             {error && <div className="alert inline-alert">{error}</div>}
